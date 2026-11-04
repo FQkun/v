@@ -1,0 +1,7 @@
+# 项目状态文档：仅本地保留，不进入站点仓库
+PROJECT.md
+TASKS.md
+DECISIONS.md
+TROUBLESHOOTING.md
+.trae-html-share-packages/
+.screenshots/
