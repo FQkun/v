@@ -106,3 +106,14 @@
 
 ### 验证
 - 快捷键列表已同步更新。
+
+## 当前任务：GitHub 仓库接入（已完成）
+
+### 方案
+- [x] 安装 Git（winget，2.56.0）。
+- [x] `git init -b main`，首次提交 `init: 稳阳视频项目`（19 个文件）。
+- [x] 远程 `origin` = https://github.com/FQkun/v.git。
+- [x] 推送 `main` 并建立上游跟踪。
+
+### 验证
+- `git status` 显示 `## main...origin/main`，远端 `refs/heads/main` 指向 `2b8fa9c`。
