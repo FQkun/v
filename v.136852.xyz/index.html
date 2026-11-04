@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="logo.ico">
+    <title>沉浸式播放器</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/video.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/overlay.css">
+</head>
+<body>
+    <!-- 侧边栏遮罩 -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>设置</h2>
+            <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="关闭">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round">
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                    <line x1="6" y1="18" x2="18" y2="6"/>
+                </svg>
+            </button>
+        </div>
+        <div class="sidebar-content">
+            <div class="setting-group">
+                <div class="setting-item">
+                    <span>自动连播</span>
+                    <label class="switch">
+                        <input type="checkbox" id="autoScrollToggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span>低干扰模式</span>
+                    <label class="switch">
+                        <input type="checkbox" id="distractionFreeToggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="setting-group">
+                <h3>搜索</h3>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="输入关键词搜索...">
+                    <div class="search-mode-toggle">
+                        <button class="search-mode-btn active" data-mode="file">用户名</button>
+                        <button class="search-mode-btn" data-mode="global">全局搜索</button>
+                    </div>
+                </div>
+                <div class="search-results" id="searchResults"></div>
+            </div>
+
+            <div class="setting-group">
+                <h3>操作</h3>
+                <button class="action-btn" id="selectFolderBtn">重新选择文件夹</button>
+            </div>
+
+            <div class="setting-group">
+                <h3>快捷键</h3>
+                <div class="shortcuts-list">
+                    <div class="shortcut-item"><span>上滑</span><span>下一条</span></div>
+                    <div class="shortcut-item"><span>下滑</span><span>上一条</span></div>
+                    <div class="shortcut-item"><span>W / S</span><span>上一条 / 下一条</span></div>
+                    <div class="shortcut-item"><span>A / D · ← / →</span><span>后退 / 前进 5 秒</span></div>
+                    <div class="shortcut-item"><span>空格</span><span>暂停/播放</span></div>
+                    <div class="shortcut-item"><span>长按 / 空格</span><span>2倍速</span></div>
+                    <div class="shortcut-item"><span>#标签</span><span>只看该标签</span></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 主界面 -->
+    <main class="app-container">
+        <!-- 顶部导航/菜单按钮 -->
+        <header class="top-bar">
+            <button class="icon-btn menu-btn" id="menuToggle">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <!-- 兼容性保留 -->
+            <button id="mobileMenuToggle" style="display:none"></button>
+        </header>
+
+        <!-- 标签过滤提示条 -->
+        <div class="filter-bar" id="filterBar">
+            <div class="filter-bar-inner">
+                <div class="filter-label" id="filterLabel"></div>
+                <button class="filter-exit-btn" id="filterExitBtn">退出标签</button>
+            </div>
+        </div>
+
+        <!-- 视频滚动容器 -->
+        <div class="video-scroll-container" id="videoScrollContainer"></div>
+
+        <!-- 初始引导页 (空状态) -->
+        <div class="initial-state" id="initialPrompt">
+            <div class="initial-content">
+                <div class="logo-placeholder">
+                    <svg viewBox="0 0 24 24" width="64" height="64" stroke="currentColor" stroke-width="1.5" fill="none">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                </div>
+                <h1>开始播放</h1>
+                <p>选择包含视频的文件夹</p>
+                
+                <button class="primary-btn" id="importBtn">
+                    选择文件夹
+                </button>
+
+                <div class="options">
+                     <label class="checkbox-wrapper">
+                        <input type="checkbox" id="unrestrictedMode">
+                        <span class="checkbox-custom"></span>
+                        <span class="label-text">宽松模式 (不校验文件名)</span>
+                    </label>
+                </div>
+                
+                <div class="loading-overlay" id="loadingStatus" style="display: none;">
+                    <div class="spinner"></div>
+                    <div id="loadingText">准备中...</div>
+                    <div id="loadingProgress">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 播放完成提示 -->
+        <div class="modal-overlay" id="playbackCompleteModal">
+            <div class="modal-card">
+                <h3>播放结束</h3>
+                <p>所有视频已播放完毕</p>
+                <div class="modal-actions">
+                    <button class="secondary-btn" id="closePlaybackBtn">退出</button>
+                    <button class="primary-btn" id="replayBtn">重新播放</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="heartsContainer" style="display:none"></div>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/preferences.js"></script>
+    <script src="js/video-source.js"></script>
+    <script src="js/gestures.js"></script>
+    <script src="js/ui.js"></script>
+    <script>new VideoPlayer();</script>
+</body>
+</html>
