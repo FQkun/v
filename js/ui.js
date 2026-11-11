@@ -329,10 +329,19 @@ VideoPlayer.prototype.showFilterBar = function(label, count) {
     if (this.filterCount) this.filterCount.textContent = count || '';
     this.filterBar.classList.add('show');
     if (this.filterExitFloat) this.filterExitFloat.classList.add('show');
+
+    // 顶部提示只短暂显示，右侧「退出筛选」按钮保持可见
+    clearTimeout(this._filterBarTimer);
+    this._filterBarTimer = setTimeout(() => {
+        this._filterBarTimer = null;
+        if (this.filterBar) this.filterBar.classList.remove('show');
+    }, 3000);
 };
 
 VideoPlayer.prototype.hideFilterBar = function() {
     if (!this.filterBar) return;
+    clearTimeout(this._filterBarTimer);
+    this._filterBarTimer = null;
     this.filterBar.classList.remove('show');
     if (this.filterExitFloat) this.filterExitFloat.classList.remove('show');
 };
