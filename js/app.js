@@ -834,6 +834,22 @@ class VideoPlayer {
         return item ? item.querySelector('video') : null;
     }
 
+    isVideoAtEnd(video) {
+        if (!video) return false;
+        if (video.ended) return true;
+        const duration = video.duration;
+        return isFinite(duration) && duration > 0 && video.currentTime >= duration - 0.25;
+    }
+
+    // 已播完的视频回看时必须归零，否则一恢复播放就立刻再次触发 ended 被自动滑走
+    rewindIfEnded(video) {
+        if (!this.isVideoAtEnd(video)) return false;
+        try {
+            video.currentTime = 0;
+        } catch (error) {}
+        return true;
+    }
+
     captureCurrentState() {
         const video = this.getActiveVideo();
         if (!video) return null;
@@ -852,10 +868,11 @@ class VideoPlayer {
 
         this.applySpeed(video, this.userSelectedSpeed || 1, item);
 
+        const rewound = this.rewindIfEnded(video);
         let startTime = 0;
-        if (resume && resume.globalIndex === this.playbackOrder[index] && resume.time > 0.5) {
+        if (!rewound && resume && resume.globalIndex === this.playbackOrder[index] && resume.time > 0.5) {
             startTime = resume.time;
-        } else if (this.audioEngine && !this.audioEngine.paused && this.audioCurrentFile === videoData.file) {
+        } else if (!rewound && this.audioEngine && !this.audioEngine.paused && this.audioCurrentFile === videoData.file) {
             // 翻页时声音先起播，画面在动画结束后对齐到音频进度
             startTime = this.audioEngine.currentTime || 0;
         }
@@ -878,11 +895,64 @@ class VideoPlayer {
         this.syncAudioEngine(video, videoData);
     }
 
+    // Safari/iOS 修改 playbackRate 时会内部 seek，导致进度突然后退/前进几秒并卡一下；
+    // 改速后在短窗口内多次比对“按新倍速本该到达的位置”，发现跳变就纠正。
+    setPlaybackRate(target, rate) {
+        if (!target) return;
+        rate = rate || 1;
+        if (Math.abs((target.playbackRate || 1) - rate) < 0.001) return;
+
+        // 取消上一次改速留下的校正窗口，避免两次改速互相拉扯
+        if (target._rateCorrection) target._rateCorrection();
+
+        const wasPlaying = !target.paused && !target.ended;
+        const before = target.currentTime || 0;
+        const changedAt = performance.now();
+
+        target.playbackRate = rate;
+        if (!wasPlaying) return;
+
+        let correcting = false;
+        let stopped = false;
+        const timers = [];
+
+        const expectedTime = () => {
+            const elapsed = (performance.now() - changedAt) / 1000;
+            const expected = before + elapsed * rate;
+            const duration = target.duration;
+            const limit = isFinite(duration) && duration > 0 ? Math.max(0, duration - 0.1) : expected;
+            return Math.max(0, Math.min(expected, limit));
+        };
+
+        const correct = () => {
+            if (stopped || correcting || target.paused || target.ended) return;
+            const wanted = expectedTime();
+            if (Math.abs((target.currentTime || 0) - wanted) > 0.75) {
+                correcting = true;
+                try { target.currentTime = wanted; } catch (error) {}
+                setTimeout(() => { correcting = false; }, 200);
+            }
+        };
+
+        const stop = () => {
+            stopped = true;
+            timers.forEach(clearTimeout);
+            target.removeEventListener('seeked', correct);
+            if (target._rateCorrection === stop) target._rateCorrection = null;
+        };
+        target._rateCorrection = stop;
+
+        // WebKit 的内部 seek 可能延迟落地，多检查几个时间点
+        [60, 180, 380, 700].forEach(delay => timers.push(setTimeout(correct, delay)));
+        timers.push(setTimeout(stop, 1100));
+        target.addEventListener('seeked', correct);
+    }
+
     applySpeed(video, speed, item) {
-        video.playbackRate = speed;
+        this.setPlaybackRate(video, speed);
         this.currentPlaybackSpeed = speed;
         if (this.audioEngine && video === this.getActiveVideo()) {
-            this.audioEngine.playbackRate = speed;
+            this.setPlaybackRate(this.audioEngine, speed);
         }
         if (item) {
             const label = item.querySelector('.action-label-speed');
@@ -893,7 +963,7 @@ class VideoPlayer {
     safePlay(video) {
         if (!video) return;
         this.userPaused = false;
-        video.playbackRate = this.userSelectedSpeed || video.playbackRate || 1;
+        this.setPlaybackRate(video, this.userSelectedSpeed || video.playbackRate || 1);
 
         // 音频引擎不可用时（例如无音轨/格式不支持），退回画面上直接出声
         if (this.audioUnavailable) {
@@ -994,6 +1064,8 @@ class VideoPlayer {
         // 动画样式已提交；音频仍在本手势调用栈内起播，画面等动画结束后再起播并对齐
         const targetVideo = targetItem ? targetItem.querySelector('video') : null;
         const targetData = this.videos[this.playbackOrder[newIndex]];
+        // 目标视频已播完时先归零，避免音频引擎对齐到末尾、画面起播即结束
+        if (targetVideo) this.rewindIfEnded(targetVideo);
         if (targetVideo && targetData) this.syncAudioEngine(targetVideo, targetData, true);
 
         // 先让 240ms 合成器翻页动画独立跑完，再做解码与起播，避免滑动中卡顿
@@ -1022,11 +1094,12 @@ class VideoPlayer {
     }
 
     startLongPress() {
+        if (this.hasLongPressActionTriggered) return;
         const video = this.getActiveVideo();
         if (!video) return;
         this.preLongPressSpeed = this.userSelectedSpeed || video.playbackRate || 1;
-        video.playbackRate = 2;
-        if (this.audioEngine) this.audioEngine.playbackRate = 2;
+        this.setPlaybackRate(video, 2);
+        if (this.audioEngine) this.setPlaybackRate(this.audioEngine, 2);
         this.currentPlaybackSpeed = 2;
         this.hasLongPressActionTriggered = true;
         this.isLongPressing = false;
@@ -1037,11 +1110,12 @@ class VideoPlayer {
     }
 
     endLongPress() {
+        if (!this.hasLongPressActionTriggered) return;
         const video = this.getActiveVideo();
         if (video) {
             const restoreSpeed = this.preLongPressSpeed || this.userSelectedSpeed || 1;
-            video.playbackRate = restoreSpeed;
-            if (this.audioEngine) this.audioEngine.playbackRate = restoreSpeed;
+            this.setPlaybackRate(video, restoreSpeed);
+            if (this.audioEngine) this.setPlaybackRate(this.audioEngine, restoreSpeed);
             this.currentPlaybackSpeed = restoreSpeed;
             this.showSpeedIndicator(video.parentElement, false);
         }

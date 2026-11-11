@@ -291,11 +291,15 @@ VideoPlayer.prototype.hideFilterBar = function() {
 
 VideoPlayer.prototype.registerServiceWorker = function() {
     if (!('serviceWorker' in navigator)) return;
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js')
-            .then(registration => {
-                if (registration && registration.update) registration.update();
-            })
-            .catch(error => console.log('ServiceWorker registration failed:', error));
-    });
+
+    // 尽量申请持久化存储，降低系统清理缓存导致离线失效的概率（不支持则忽略）
+    if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persist().catch(() => {});
+    }
+
+    navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' })
+        .then(registration => {
+            if (registration && registration.update) registration.update();
+        })
+        .catch(error => console.log('ServiceWorker registration failed:', error));
 };

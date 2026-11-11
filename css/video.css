@@ -425,13 +425,31 @@
     transform: scale(0.95);
 }
 
-/* 移动端：底部为系统手势条/小白条留出空间 */
+/* 移动端：底部为系统手势条/小白条留出空间，并整体上移，避开顶部刘海/灵动岛 */
 @media (max-width: 900px), (pointer: coarse) {
+    :root {
+        /* 手机端整体上移量 */
+        --player-lift: 2.4vh;
+    }
+
+    /* 画面在 contain 留白内上移，不裁切、不影响翻页尺寸 */
+    .video-item video {
+        object-position: 50% calc(50% - var(--player-lift));
+    }
+
+    .right-actions {
+        bottom: calc(96px + var(--safe-area-bottom) + var(--player-lift));
+        /* 安全区被系统报成 0 时（部分 WebView/安卓手势条），保留最低安全距离 */
+        bottom: calc(96px + max(var(--safe-area-bottom), 20px) + var(--player-lift));
+    }
+
     .bottom-controls {
-        bottom: calc(26px + var(--safe-area-bottom));
+        bottom: calc(26px + var(--safe-area-bottom) + var(--player-lift));
+        bottom: calc(26px + max(var(--safe-area-bottom), 20px) + var(--player-lift));
     }
 
     .video-info-overlay {
-        padding-bottom: calc(46px + var(--safe-area-bottom));
+        padding-bottom: calc(46px + var(--safe-area-bottom) + var(--player-lift));
+        padding-bottom: calc(46px + max(var(--safe-area-bottom), 20px) + var(--player-lift));
     }
 }
