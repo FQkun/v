@@ -234,7 +234,7 @@ VideoPlayer.prototype.enterTag = function(tag) {
     this.searchResults.innerHTML = '';
     this.activeTag = tag;
     this.activeAuthor = null;
-    this.showFilterBar(`只看 #${tag} 的视频 · ${filtered.length} 个`, '退出');
+    this.showFilterBar(`只看 #${tag} 的视频`, `${filtered.length} 个`);
     this.applyPlaylist(filtered, true);
 };
 
@@ -258,7 +258,7 @@ VideoPlayer.prototype.enterAuthor = function(author) {
     this.searchResults.innerHTML = '';
     this.activeAuthor = author;
     this.activeTag = null;
-    this.showFilterBar(`只看 @${author} 的视频 · ${filtered.length} 个`, '退出');
+    this.showFilterBar(`只看 @${author} 的视频`, `${filtered.length} 个`);
     this.applyPlaylist(filtered, true);
 };
 
@@ -275,16 +275,18 @@ VideoPlayer.prototype.exitFilter = function() {
     this.showToast(wasAuthor ? '已退出筛选，恢复全部视频' : '已退出标签，恢复全部视频');
 };
 
-VideoPlayer.prototype.showFilterBar = function(label, exitLabel) {
+VideoPlayer.prototype.showFilterBar = function(label, count) {
     if (!this.filterBar) return;
-    this.filterLabel.textContent = label;
-    this.filterExitBtn.textContent = exitLabel || '退出筛选';
+    this.filterLabel.textContent = label || '';
+    if (this.filterCount) this.filterCount.textContent = count || '';
     this.filterBar.classList.add('show');
+    if (this.filterExitFloat) this.filterExitFloat.classList.add('show');
 };
 
 VideoPlayer.prototype.hideFilterBar = function() {
     if (!this.filterBar) return;
     this.filterBar.classList.remove('show');
+    if (this.filterExitFloat) this.filterExitFloat.classList.remove('show');
 };
 
 // ---------------- 其他 ----------------

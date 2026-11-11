@@ -23,7 +23,8 @@ class VideoPlayer {
         this.searchResults = document.getElementById('searchResults');
         this.filterBar = document.getElementById('filterBar');
         this.filterLabel = document.getElementById('filterLabel');
-        this.filterExitBtn = document.getElementById('filterExitBtn');
+        this.filterCount = document.getElementById('filterCount');
+        this.filterExitFloat = document.getElementById('filterExitFloat');
         this.searchMode = 'file';
 
         this.videos = [];
@@ -106,7 +107,7 @@ class VideoPlayer {
         this.distractionFreeToggle.addEventListener('change', () => this.toggleDistractionFreeMode());
         this.replayBtn.addEventListener('click', () => this.handleReplay());
         this.closePlaybackBtn.addEventListener('click', () => this.hidePlaybackComplete());
-        if (this.filterExitBtn) this.filterExitBtn.addEventListener('click', () => this.exitFilter());
+        if (this.filterExitFloat) this.filterExitFloat.addEventListener('click', () => this.exitFilter());
 
         if (this.autoScrollToggle) {
             this.autoScrollToggle.addEventListener('change', (e) => {

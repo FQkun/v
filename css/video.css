@@ -399,30 +399,49 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 56vw;
+    min-width: 0;
 }
 
-.filter-exit-btn {
+.filter-count {
     flex-shrink: 0;
-    background: var(--bg-glass-strong);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+/* 退出筛选：放在倍速按钮上方 */
+.filter-exit-float {
+    position: absolute;
+    right: 12px;
+    bottom: calc(170px + var(--safe-area-bottom) + var(--player-lift));
+    z-index: 120;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 12px;
+    border-radius: var(--radius-pill);
+    background: rgba(20, 20, 26, 0.72);
     border: 1px solid var(--border-default);
     color: var(--text-primary);
     font-size: 12px;
-    font-weight: 500;
-    padding: 5px var(--space-3);
-    border-radius: var(--radius-pill);
+    font-weight: 600;
+    letter-spacing: 0.01em;
     cursor: pointer;
-    transition: background var(--duration-fast) var(--ease-out),
-                transform var(--duration-fast) var(--ease-out);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--duration-fast) var(--ease-out),
+                background var(--duration-fast) var(--ease-out);
 }
 
-.filter-exit-btn:hover {
+.filter-exit-float.show {
+    display: inline-flex;
+}
+
+.filter-exit-float:active {
+    transform: scale(0.94);
     background: var(--accent-soft);
-    color: var(--accent-hover);
-}
-
-.filter-exit-btn:active {
-    transform: scale(0.95);
 }
 
 /* 移动端：底部为系统手势条/小白条留出空间，并整体上移，避开顶部刘海/灵动岛 */
@@ -446,6 +465,11 @@
     .bottom-controls {
         bottom: calc(26px + var(--safe-area-bottom) + var(--player-lift));
         bottom: calc(26px + max(var(--safe-area-bottom), 20px) + var(--player-lift));
+    }
+
+    .filter-exit-float {
+        bottom: calc(170px + var(--safe-area-bottom) + var(--player-lift));
+        bottom: calc(170px + max(var(--safe-area-bottom), 20px) + var(--player-lift));
     }
 
     .video-info-overlay {
