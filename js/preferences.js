@@ -18,6 +18,7 @@ VideoPlayer.prototype.savePreferences = function() {
 
 VideoPlayer.prototype.updateUIFromPreferences = function() {
     if (this.autoScrollToggle) this.autoScrollToggle.checked = this.autoScroll;
+    this.updatePlayModeUI();
     this.speedButtons.forEach(btn => {
         btn.classList.toggle('active', parseFloat(btn.dataset.speed) === this.userSelectedSpeed);
     });

@@ -25,6 +25,8 @@ class VideoPlayer {
         this.filterLabel = document.getElementById('filterLabel');
         this.filterCount = document.getElementById('filterCount');
         this.filterExitFloat = document.getElementById('filterExitFloat');
+        this.playModeToggle = document.getElementById('playModeToggle');
+        this.libraryCount = document.getElementById('libraryCount');
         this.searchMode = 'file';
 
         this.videos = [];
@@ -103,7 +105,13 @@ class VideoPlayer {
         this.sidebarCloseBtn.addEventListener('click', () => this.toggleSidebar());
         this.sidebarOverlay.addEventListener('click', () => this.toggleSidebar());
         this.importBtn.addEventListener('click', () => this.requestFolderAccess());
-        this.selectFolderBtn.addEventListener('click', () => location.reload());
+        this.selectFolderBtn.addEventListener('click', () => this.requestFolderAccess());
+        if (this.playModeToggle) {
+            this.playModeToggle.addEventListener('click', (e) => {
+                const btn = e.target.closest('.segment-btn');
+                if (btn) this.setPlayMode(btn.dataset.mode);
+            });
+        }
         this.distractionFreeToggle.addEventListener('change', () => this.toggleDistractionFreeMode());
         this.replayBtn.addEventListener('click', () => this.handleReplay());
         this.closePlaybackBtn.addEventListener('click', () => this.hidePlaybackComplete());
@@ -406,6 +414,9 @@ class VideoPlayer {
             this.generatePlaybackOrder();
             this.renderVideos(0);
             this.initialPrompt.classList.add('hidden');
+            if (this.libraryCount) this.libraryCount.textContent = `${this.videos.length} 个`;
+            this.sidebar.classList.remove('show');
+            this.sidebarOverlay.classList.remove('show');
         } catch (error) {
             this.showToast(error.message || '加载失败');
             this.loadingStatus.style.display = 'none';

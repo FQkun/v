@@ -21,6 +21,54 @@ VideoPlayer.prototype.toggleDistractionFreeMode = function() {
     }
 };
 
+VideoPlayer.prototype.updatePlayModeUI = function() {
+    document.querySelectorAll('.segment-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === this.playMode);
+    });
+};
+
+VideoPlayer.prototype.setPlayMode = function(mode) {
+    if (!mode || this.playMode === mode) return;
+    this.playMode = mode;
+    this.savePreferences();
+    this.updatePlayModeUI();
+
+    const modeLabel = mode === 'sequential' ? '顺序' : '随机';
+    if (this.videos.length === 0) {
+        this.showToast(`播放模式：${modeLabel}`);
+        return;
+    }
+
+    const currentGlobal = this.playbackOrder[this.currentVideoIndex];
+
+    // 搜索结果是临时列表，切换模式时回到完整列表
+    this.searchActive = false;
+    this.searchInput.value = '';
+    this.searchResults.innerHTML = '';
+
+    this.baseOrder = new Array(this.videos.length);
+    for (let i = 0; i < this.videos.length; i++) this.baseOrder[i] = i;
+    if (mode !== 'sequential') {
+        this.shuffleArray(this.baseOrder, Math.floor(Date.now() / 1000));
+    }
+
+    let ordered = this.baseOrder.slice();
+    if (this.activeTag) {
+        ordered = ordered.filter(i => this.videos[i].tags && this.videos[i].tags.includes(this.activeTag));
+    } else if (this.activeAuthor) {
+        ordered = ordered.filter(i => this.videos[i].author === this.activeAuthor);
+    }
+    if (ordered.length === 0) ordered = this.baseOrder.slice();
+
+    let start = ordered.indexOf(currentGlobal);
+    if (start < 0) start = 0;
+
+    this.playbackOrder = ordered;
+    this.currentVideoIndex = 0;
+    this.renderVideos(start);
+    this.showToast(`播放模式：${modeLabel}`);
+};
+
 VideoPlayer.prototype.showSpeedMenu = function(speedBtn, videoElement) {
     const existingMenu = document.querySelector('.speed-menu');
     if (existingMenu) { existingMenu.remove(); return; }
